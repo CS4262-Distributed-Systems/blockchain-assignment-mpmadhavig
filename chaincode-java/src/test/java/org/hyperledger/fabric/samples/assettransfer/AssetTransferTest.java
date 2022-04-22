@@ -213,6 +213,39 @@ public final class AssetTransferTest {
     }
 
     @Nested
+    class DuplicateAssetTransaction {
+
+        @Test
+        public void whenAssetDoesNotExist() {
+            AssetTransfer contract = new AssetTransfer();
+            Context ctx = mock(Context.class);
+            ChaincodeStub stub = mock(ChaincodeStub.class);
+            when(ctx.getStub()).thenReturn(stub);
+            when(stub.getStringState("non_existing_asset")).thenReturn("");
+            Throwable thrown = catchThrowable(() -> {
+                contract.DuplicateAsset(ctx, "non_existing_asset", "john");
+            });
+            assertThat(thrown).isInstanceOf(ChaincodeException.class).hasNoCause()
+                    .hasMessage("Asset non_existing_asset does not exist");
+            assertThat(((ChaincodeException) thrown).getPayload()).isEqualTo("ASSET_NOT_FOUND".getBytes());
+        }
+
+        @Test
+        public void whenAssetDoesExist() {
+            AssetTransfer contract = new AssetTransfer();
+            Context ctx = mock(Context.class);
+            ChaincodeStub stub = mock(ChaincodeStub.class);
+            when(ctx.getStub()).thenReturn(stub);
+            when(stub.getStringState("asset1"))
+                .thenReturn("{ \"assetID\": \"asset1\", \"color\": \"blue\", \"size\": 5, \"owner\": \"Tomoko\", \"appraisedValue\": 300 }");
+
+            Asset asset = contract.DuplicateAsset(ctx, "asset1", "Tomoko-brother");
+
+            assertThat(asset).isEqualTo(new Asset("duplicated_asset1", "blue", 5, "Tomoko-brother", 300));
+        }
+    }
+
+    @Nested
     class TransferAssetTransaction {
 
         @Test
